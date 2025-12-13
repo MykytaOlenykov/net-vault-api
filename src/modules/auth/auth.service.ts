@@ -55,6 +55,11 @@ export const createService = (
             expiresIn: DEFAULT_TOKEN_EXPIRES_IN,
         });
 
+        await userRepository.update({
+            where: { id: user.id },
+            data: { token },
+        });
+
         return {
             data: {
                 user: {
