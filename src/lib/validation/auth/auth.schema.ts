@@ -29,3 +29,11 @@ export const loginResponseSchema = z.object({
 });
 
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
+
+export const currentUserResponseSchema = z.object({
+    data: z.object({
+        currentUser: userSchema,
+    }),
+});
+
+export type CurrentUserResponse = z.infer<typeof currentUserResponseSchema>;
