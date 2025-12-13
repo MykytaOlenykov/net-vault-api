@@ -1,0 +1,33 @@
+{
+    "compilerOptions": {
+        "types": ["node"],
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "lib": ["es2023"],
+        "module": "nodenext",
+        "target": "es2022",
+        "moduleResolution": "nodenext",
+        "useDefineForClassFields": true,
+        "moduleDetection": "force",
+        "composite": true,
+        "strict": true,
+        "downlevelIteration": true,
+        "allowSyntheticDefaultImports": true,
+        "forceConsistentCasingInFileNames": true,
+        "esModuleInterop": true,
+        "allowJs": true,
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "typeRoots": ["node_modules/@types", "src/types"],
+        "paths": {
+          "@/*": ["src/*"],
+          "@test/*": ["test/*"]
+        },
+        "outDir": "build",
+        "incremental": true
+    },
+    "include": ["src/**/*", "**/*.json", "test/**/*"],
+}
