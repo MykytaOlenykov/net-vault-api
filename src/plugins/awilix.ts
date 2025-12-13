@@ -23,6 +23,7 @@ const configureAwilix = async (fastify: FastifyInstance) => {
         log: asValue(fastify.log),
         prisma: asValue(fastify.prisma),
         config: asValue(fastify.config),
+        jwt: asValue(fastify.jwt),
     });
 
     // Register dependencies from the application: repositories, services, route handlers
@@ -45,5 +46,5 @@ const configureAwilix = async (fastify: FastifyInstance) => {
 
 export default fp(configureAwilix, {
     name: FastifyPlugin.Awilix,
-    dependencies: [FastifyPlugin.Prisma, FastifyPlugin.Env],
+    dependencies: [FastifyPlugin.Prisma, FastifyPlugin.Env, FastifyPlugin.Jwt],
 });

@@ -1,7 +1,7 @@
 services:
     postgresdb:
         image: postgres:16.4
-        container_name: app-postgres-db
+        container_name: net-vault-postgres-db
         restart: no
         environment:
             POSTGRES_DB: "postgres"
@@ -21,7 +21,7 @@ services:
             context: .
             dockerfile: Dockerfile
             target: base
-        container_name: app-node-api
+        container_name: net-vault-node-api
         env_file:
             - .env
         environment:
