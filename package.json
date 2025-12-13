@@ -13,7 +13,6 @@
         "lint": "eslint --ignore-pattern \"test/*\" --color",
         "lint:fix": "eslint --ignore-pattern \"test/*\" --color --fix",
         "format": "prettier --write",
-        "commitlint": "commitlint --edit",
         "prisma:push": "prisma db push",
         "prisma:generate": "prisma generate",
         "prisma:seed": "prisma db seed",
@@ -30,11 +29,6 @@
         "test:int:ci": "vitest run -c vitest-int.config.ts --reporter verbose",
         "generate:module": "node cli/module-gen/index.js",
         "generate:repository": "node cli/repository-gen/index.js"
-    },
-    "config": {
-        "commitizen": {
-            "path": "./node_modules/cz-conventional-changelog"
-        }
     },
     "lint-staged": {
         "**/*.{js,jsx,ts,tsx}": [
@@ -59,8 +53,6 @@
         "node": ">=22.0.0"
     },
     "devDependencies": {
-        "@commitlint/cli": "^19.8.1",
-        "@commitlint/config-conventional": "^19.8.1",
         "@stylistic/eslint-plugin-js": "^4.4.1",
         "@types/node": "^22.14.0",
         "@types/pg": "^8.15.5",
