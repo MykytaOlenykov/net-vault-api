@@ -70,7 +70,7 @@ model Credential {
 model Device {
   id        String @id @default(uuid()) @db.Uuid
   name      String
-  ipAddress String @map("ip_address") @db.Inet
+  ipAddress String @map("ip_address")
   port      Int    @default(22)
 
   deviceTypeId String     @map("device_type_id") @db.Uuid

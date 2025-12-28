@@ -11,6 +11,36 @@ export type DeviceRepository = BaseRepository<"device"> & {
     >;
 };
 
+export const deviceSelect = {
+    id: true,
+    name: true,
+    ipAddress: true,
+    port: true,
+
+    deviceType: {
+        select: {
+            id: true,
+            vendor: true,
+        },
+    },
+
+    backupSchedule: true,
+
+    isActive: true,
+    createdAt: true,
+    updatedAt: true,
+
+    deviceTags: {
+        select: {
+            tag: {
+                select: {
+                    name: true,
+                },
+            },
+        },
+    },
+} satisfies Prisma.DeviceSelect;
+
 export const createDeviceRepository = (
     prisma: PrismaClient
 ): DeviceRepository => {
