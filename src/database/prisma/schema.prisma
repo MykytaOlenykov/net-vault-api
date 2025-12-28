@@ -28,11 +28,119 @@ model User {
 }
 
 model PasswordReset {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   tokenHash String   @map("token_hash")
   email     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("password_reset")
+}
+
+enum BackupStatus {
+  Success
+  Failed
+  Running
+}
+
+model DeviceType {
+  id            String @id @default(uuid()) @db.Uuid
+  vendor        String
+  configCommand String @map("config_command") @db.Text
+
+  devices Device[]
+
+  @@map("device_types")
+}
+
+model Credential {
+  id       String @id @default(uuid()) @db.Uuid
+  username String
+
+  secretRef String @map("secret_ref") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  devices Device[]
+
+  @@map("credentials")
+}
+
+model Device {
+  id        String @id @default(uuid()) @db.Uuid
+  name      String
+  ipAddress String @map("ip_address") @db.Inet
+  port      Int    @default(22)
+
+  deviceTypeId String     @map("device_type_id") @db.Uuid
+  deviceType   DeviceType @relation(fields: [deviceTypeId], references: [id], onDelete: Restrict)
+
+  credentialId String?     @map("credential_id") @db.Uuid
+  credential   Credential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+
+  backupSchedule String? @map("backup_schedule")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  configVersions ConfigVersion[]
+  deviceTags     DeviceTag[]
+
+  @@unique([ipAddress, port])
+  @@index([isActive])
+  @@index([deviceTypeId])
+  @@index([credentialId])
+  @@map("devices")
+}
+
+model ConfigVersion {
+  id       String @id @default(uuid()) @db.Uuid
+  deviceId String @map("device_id") @db.Uuid
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  versionNumber Int @map("version_number")
+
+  status     BackupStatus @map("status")
+  startedAt  DateTime     @default(now()) @map("started_at")
+  finishedAt DateTime?    @map("finished_at")
+
+  configText String? @map("config_text") @db.Text
+  configHash String? @map("config_hash")
+
+  changedLines Int     @default(0) @map("changed_lines")
+  isDuplicate  Boolean @default(false) @map("is_duplicate")
+
+  error String? @map("error") @db.Text
+
+  @@unique([deviceId, versionNumber])
+  @@index([deviceId, startedAt])
+  @@index([deviceId, finishedAt])
+  @@index([deviceId, status])
+  @@index([deviceId, configHash])
+  @@map("config_versions")
+}
+
+model DeviceTag {
+  deviceId  String   @map("device_id") @db.Uuid
+  tagId     String   @map("tag_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([deviceId, tagId])
+  @@index([tagId])
+  @@index([deviceId])
+  @@map("device_tags")
+}
+
+model Tag {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  deviceTags DeviceTag[]
+
+  @@map("tags")
 }
