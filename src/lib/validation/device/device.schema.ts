@@ -56,8 +56,6 @@ export const createDeviceBodySchema = z.object({
     backupSchedule: z.string().nullable(),
 
     isActive: z.boolean(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
 
     tags: z.array(z.string()),
 });
@@ -82,8 +80,6 @@ export const updateDeviceBodySchema = z.object({
     backupSchedule: z.string().nullable(),
 
     isActive: z.boolean(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
 
     tags: z.array(z.string()),
 });
