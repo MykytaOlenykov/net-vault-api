@@ -34,6 +34,34 @@ services:
         volumes:
             - ./src:/home/node/app/src
 
+    worker:
+        build:
+            context: .
+            dockerfile: worker.Dockerfile
+            target: base
+        container_name: net-vault-worker
+        command: bash -c "npm run prisma:generate && npm run start:worker:dev"
+        env_file:
+            - .env
+        depends_on:
+            - redis
+        networks:
+            - primary
+        volumes:
+            - ./src:/home/node/app/src
+
+    redis:
+        image: redis:7.2
+        container_name: net-vault-redis
+        restart: "no"
+        ports:
+            - "6379:6379"
+        command: ["redis-server", "--appendonly", "yes"]
+        networks:
+            - primary
+        volumes:
+            - ./.volumes/redis:/data
+
 networks:
     primary:
         driver: bridge
