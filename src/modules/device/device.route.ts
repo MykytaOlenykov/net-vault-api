@@ -50,7 +50,7 @@ export const createDeviceRoutes = (
     );
 
     fastify.put(
-        "/:deviceID",
+        "/:deviceId",
         {
             preHandler: [fastify.authenticate],
             schema: {
@@ -67,7 +67,7 @@ export const createDeviceRoutes = (
     );
 
     fastify.delete(
-        "/:deviceID",
+        "/:deviceId",
         {
             preHandler: [fastify.authenticate],
             schema: {
@@ -80,7 +80,7 @@ export const createDeviceRoutes = (
     );
 
     fastify.get(
-        "/:deviceID",
+        "/:deviceId",
         {
             preHandler: [fastify.authenticate],
             schema: {
