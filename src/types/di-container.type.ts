@@ -9,8 +9,8 @@ import { DeviceHandler } from "@/modules/device/device.handler.js";
 import { UserRepository } from "@/database/repositories/user/user.repository.js";
 import { ApplicationService } from "@/modules/application/application.service.js";
 import { ApplicationHandler } from "@/modules/application/application.handler.js";
+import { ConfigVersionService } from "@/modules/device/config-version.service.js";
 import { DeviceRepository } from "@/database/repositories/device/device.repository.js";
-import { ConfigVersionService } from "@/modules/config-version/config-version.service.js";
 import { ConfigVersionRepository } from "@/database/repositories/config-version/config-version.repository.js";
 
 export type Cradle = {

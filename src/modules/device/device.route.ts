@@ -1,6 +1,13 @@
 import { FastifyInstance } from "fastify";
 import { DeviceHandler } from "@/modules/device/device.handler.js";
 import {
+    configVersionParamsSchema,
+    getConfigVersionByIdResponseSchema,
+    getConfigVersionsQuerystringSchema,
+    getConfigVersionsResponseSchema,
+    getLastConfigVersionResponseSchema,
+} from "@/lib/validation/config-version/config-version.schema.js";
+import {
     createDeviceBodySchema,
     createDeviceResponseSchema,
     deviceParamsSchema,
@@ -123,5 +130,54 @@ export const createDeviceRoutes = (
             },
         },
         deviceHandler.getTypes
+    );
+
+    fastify.get(
+        "/:deviceId/configs",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get configs",
+                params: deviceParamsSchema,
+                querystring: getConfigVersionsQuerystringSchema,
+                response: {
+                    200: getConfigVersionsResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getConfigVersions
+    );
+
+    fastify.get(
+        "/configs/:configId",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get config by id",
+                params: configVersionParamsSchema,
+                response: {
+                    200: getConfigVersionByIdResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getConfigVersionById
+    );
+
+    fastify.get(
+        "/:deviceId/configs/last",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get last config",
+                params: deviceParamsSchema,
+                response: {
+                    200: getLastConfigVersionResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getLastConfigVersion
     );
 };

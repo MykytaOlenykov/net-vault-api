@@ -22,7 +22,7 @@ export const createConfigVersionRepository = (
             const ConfigVersion = await prisma.configVersion.findUnique(args);
 
             if (!ConfigVersion) {
-                throw new NotFoundError("ConfigVersion not found.");
+                throw new NotFoundError("Config version not found.");
             }
 
             return ConfigVersion;
