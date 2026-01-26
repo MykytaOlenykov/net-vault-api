@@ -1,7 +1,8 @@
 import { Job } from "bullmq";
 import { logger } from "../worker.utils.js";
 import { JobName } from "../worker.const.js";
-import { connectSSH, execShell } from "../ssh.js";
+import { connectSSH, execShell } from "../connectors/ssh.js";
+import { connectTelnet, execTelnet } from "../connectors/telnet.js";
 // import { prisma } from "../worker.prisma.js";
 
 export async function backupProcessor(job: Job) {
@@ -24,39 +25,48 @@ export async function backupProcessor(job: Job) {
         // const device = await prisma.device.findUnique({
         //   where: { id: job.data.deviceId },
         // });
-        const device = {
-            id: "1",
-            ip: "10.10.1.27",
-            username: String(process.env.SSH_USERNAME),
-            password: String(process.env.SSH_PASSWORD),
-        };
+        const device = job.data.device;
 
         if (!device) {
             throw new Error("Device not found");
         }
-        // console.log(device);
-        // console.log("Start connection...");
 
-        const client = await connectSSH({
-            host: device.ip,
-            username: device.username,
-            password: device.password,
-        });
+        let output = "";
+        const protocol = device.protocol || "ssh";
 
-        // console.log("Connected...");
+        const commands = device.commands;
 
-        // const output_test = await execShell(client, "terminal length 0\nshow version");
-        // console.log(output_test)
-        // const output = await execShell(client, [
-        await execShell(client, [
-            "terminal length 0",
-            "show startup-config",
-        ]);
-        // console.log(output);
+        if (!commands) {
+            throw new Error("Commands not found");
+        }
 
-        // logger.info({ output }, "SSH command output");
+        if (protocol === "telnet") {
+            const client = await connectTelnet({
+                host: device.ip,
+                username: device.username,
+                password: device.password,
+            });
 
-        client.end();
+            output = await execTelnet(client, commands);
+
+            if (client && typeof client.end === "function") {
+                await client.end();
+            } else if (client && typeof client.destroy === "function") {
+                client.destroy();
+            }
+        } else {
+            const client = await connectSSH({
+                host: device.ip,
+                username: device.username,
+                password: device.password,
+            });
+
+            output = await execShell(client, commands);
+
+            client.end();
+        }
+
+        console.log(output);
 
         return;
     }
