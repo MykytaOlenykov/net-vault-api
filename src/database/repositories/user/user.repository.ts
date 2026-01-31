@@ -11,6 +11,25 @@ export type UserRepository = BaseRepository<"user"> & {
     >;
 };
 
+export const userSelect = {
+    id: true,
+    name: true,
+    email: true,
+    status: true,
+    lastLogin: true,
+    createdAt: true,
+    updatedAt: true,
+    userRoles: {
+        select: {
+            role: {
+                select: {
+                    name: true,
+                },
+            },
+        },
+    },
+} satisfies Prisma.UserSelect;
+
 export const createUserRepository = (prisma: PrismaClient): UserRepository => {
     const repository = generateRepository(prisma, "User");
 
