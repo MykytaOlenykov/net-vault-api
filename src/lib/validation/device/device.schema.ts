@@ -39,7 +39,9 @@ export type GetDevicesQuerystring = z.infer<typeof getDevicesQuerystringSchema>;
 
 export const getDevicesResponseSchema = z.object({
     data: z.object({
-        devices: z.array(deviceSchema),
+        devices: z.array(
+            deviceSchema.extend({ lastBackup: z.date().nullable() })
+        ),
         total: z.number(),
     }),
 });
