@@ -8,6 +8,8 @@ import { UserService } from "@/modules/user/user.service.js";
 import { UserHandler } from "@/modules/user/user.handler.js";
 import { DeviceService } from "@/modules/device/device.service.js";
 import { DeviceHandler } from "@/modules/device/device.handler.js";
+import { AnalyticsService } from "@/modules/analytics/analytics.service.js";
+import { AnalyticsHandler } from "@/modules/analytics/analytics.handler.js";
 import { UserRepository } from "@/database/repositories/user/user.repository.js";
 import { RoleRepository } from "@/database/repositories/role/role.repository.js";
 import { ApplicationService } from "@/modules/application/application.service.js";
@@ -24,6 +26,9 @@ export type Cradle = {
 
     applicationService: ApplicationService;
     applicationHandler: ApplicationHandler;
+
+    analyticsService: AnalyticsService;
+    analyticsHandler: AnalyticsHandler;
 
     userRepository: UserRepository;
     roleRepository: RoleRepository;
