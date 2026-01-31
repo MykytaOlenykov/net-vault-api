@@ -43,7 +43,8 @@
         ]
     },
     "prisma": {
-        "schema": "src/database/prisma/schema.prisma"
+        "schema": "src/database/prisma/schema.prisma",
+        "seed": "tsx src/database/prisma/seed.ts"
     },
     "keywords": [
         "backend",

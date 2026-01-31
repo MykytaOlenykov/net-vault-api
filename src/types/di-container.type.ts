@@ -7,11 +7,14 @@ import { AuthHandler } from "@/modules/auth/auth.handler.js";
 import { DeviceService } from "@/modules/device/device.service.js";
 import { DeviceHandler } from "@/modules/device/device.handler.js";
 import { UserRepository } from "@/database/repositories/user/user.repository.js";
+import { RoleRepository } from "@/database/repositories/role/role.repository.js";
 import { ApplicationService } from "@/modules/application/application.service.js";
 import { ApplicationHandler } from "@/modules/application/application.handler.js";
 import { ConfigVersionService } from "@/modules/device/config-version.service.js";
 import { DeviceRepository } from "@/database/repositories/device/device.repository.js";
 import { ConfigVersionRepository } from "@/database/repositories/config-version/config-version.repository.js";
+import { UserService } from "@/modules/user/user.service.js";
+import { UserHandler } from "@/modules/user/user.handler.js";
 
 export type Cradle = {
     log: FastifyBaseLogger;
@@ -23,6 +26,9 @@ export type Cradle = {
     applicationHandler: ApplicationHandler;
 
     userRepository: UserRepository;
+    roleRepository: RoleRepository;
+    userService: UserService;
+    userHandler: UserHandler;
 
     authService: AuthService;
     authHandler: AuthHandler;
