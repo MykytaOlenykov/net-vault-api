@@ -1,4 +1,5 @@
 import { Job } from "bullmq";
+import { diffLines } from "diff";
 import { createHash } from "node:crypto";
 import { logger } from "../worker.utils.js";
 import { JobName } from "../worker.const.js";
@@ -87,10 +88,16 @@ export async function backupProcessor(job: Job) {
             .update(output)
             .digest("hex");
 
-        // Get last version
+        // Get last version (with configText for diff calculation)
         const lastVersion = await prisma.configVersion.findFirst({
             where: { deviceId: device.id },
             orderBy: { versionNumber: "desc" },
+            select: {
+                versionNumber: true,
+                status: true,
+                configHash: true,
+                configText: true,
+            },
         });
 
         const nextVersionNumber = (lastVersion?.versionNumber || 0) + 1;
@@ -116,6 +123,22 @@ export async function backupProcessor(job: Job) {
             return;
         }
 
+        // Calculate changed lines (only if config differs and we have a previous version)
+        let changedLines = 0;
+
+        if (status === "Success" && lastVersion?.configText) {
+            const diff = diffLines(lastVersion.configText, output);
+
+            changedLines = diff.reduce((count, part) => {
+                // Count added or removed lines
+                if (part.added || part.removed) {
+                    return count + (part.count || 0);
+                }
+
+                return count;
+            }, 0);
+        }
+
         // Save to DB
         await prisma.configVersion.create({
             data: {
@@ -126,6 +149,7 @@ export async function backupProcessor(job: Job) {
                 finishedAt: new Date(),
                 configText: status === "Success" ? output : null,
                 configHash: status === "Success" ? configHash : null,
+                changedLines: changedLines,
                 isDuplicate: isDuplicate,
                 error: error,
             },
