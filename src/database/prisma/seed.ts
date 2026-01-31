@@ -4,24 +4,6 @@ import { hashing } from "../../lib/hashing/hashing.js";
 const prisma = new PrismaClient();
 
 async function main() {
-    // Створюємо ролі
-    const roles = [
-        { name: "Administrator", description: "Full system access" },
-        { name: "Operator", description: "Device management access" },
-        { name: "Viewer", description: "Read-only access" },
-        { name: "Auditor", description: "Audit and review access" },
-    ];
-
-    for (const role of roles) {
-        await prisma.role.upsert({
-            where: { name: role.name },
-            update: {},
-            create: role,
-        });
-    }
-
-    console.log("Roles created/updated");
-
     // Створюємо адміна користувача
     const adminPassword = await hashing.hashPassword("admin123");
 
@@ -62,4 +44,3 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
-
