@@ -1,4 +1,5 @@
 import { Telnet } from "telnet-client";
+import { logger } from "../worker.utils.js";
 
 export interface TelnetConnectParams {
     host: string;
@@ -15,34 +16,23 @@ export async function connectTelnet({
 }: TelnetConnectParams): Promise<Telnet> {
     const connection = new Telnet();
 
-    connection.on("connect", () => console.log("DEBUG: Telnet event: connect"));
-    connection.on("ready", () => console.log("DEBUG: Telnet event: ready"));
-
-    connection.on("data", (data: Buffer) => {
-        if (Buffer.isBuffer(data)) {
-            console.log(`DEBUG: Telnet event: data (${data.toString()})`);
-        } else {
-            console.log(`DEBUG: Telnet event: data (str=${data})`);
-        }
-    });
-
     connection.on("error", (err: NodeJS.ErrnoException) => {
         if (
             err.code === "ECONNRESET" ||
             (err.message && err.message.includes("ECONNRESET"))
         ) {
-            console.log(
+            logger.info(
                 "DEBUG: Telnet connection reset (remote side closed connection)"
             );
         } else {
-            console.error("DEBUG: Telnet event: error", err);
+            logger.error({ err }, "Telnet event: error");
         }
     });
 
-    connection.on("close", () => console.log("DEBUG: Telnet event: close"));
-    connection.on("timeout", () => console.log("DEBUG: Telnet event: timeout"));
+    connection.on("close", () => logger.info("Telnet event: close"));
+    connection.on("timeout", () => logger.warn("Telnet event: timeout"));
 
-    console.log("DEBUG: Connecting to ", host, port);
+    logger.info({ host, port }, "Connecting via Telnet");
 
     // Configured for Cisco Nexus or generic linux/network device
     await connection.connect({
@@ -67,8 +57,8 @@ export async function connectTelnet({
         pageSeparator: /---- More ----|--More--/i,
     });
 
-    console.log("Connected and Authenticated (via built-in flow)");
-    console.log("TELNET authenticated, shell ready");
+    // console.log("Connected and Authenticated (via built-in flow)");
+    // console.log("TELNET authenticated, shell ready");
 
     return connection;
 }
@@ -77,13 +67,13 @@ export async function execTelnet(
     client: Telnet,
     commands: string[]
 ): Promise<string> {
-    console.log("Start exec TELNET...");
-    console.log("commands: ", commands);
+    // console.log("Start exec TELNET...");
+    // console.log("commands: ", commands);
     let output = "";
 
     try {
         for (const command of commands) {
-            console.log(`command: ${command}`);
+            // console.log(`command: ${command}`);
 
             let cmdBuffer = "";
 
@@ -96,18 +86,16 @@ export async function execTelnet(
             try {
                 // exec returns the response from the server after the command
                 const cmdOutput = await client.exec(command);
-                console.log("output received (len): ", cmdOutput.length);
-                output += cmdOutput + "\n";
+                // console.log("output received (len): ", cmdOutput.length);
+                output = cmdOutput + "\n";
             } finally {
                 client.removeListener("data", dataListener);
             }
         }
     } catch (error) {
-        console.error("DEBUG: Error in execTelnet", error);
+        logger.error({ error }, "Error in execTelnet");
         throw error;
     }
-
-    console.log("End exec TELNET.");
 
     return output;
 }
