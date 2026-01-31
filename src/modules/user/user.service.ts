@@ -1,12 +1,12 @@
+import { hashing } from "@/lib/hashing/hashing.js";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { getPaginationParams } from "@/lib/utils/pagination.util.js";
-import { hashing } from "@/lib/hashing/hashing.js";
+import { RoleRepository } from "@/database/repositories/role/role.repository.js";
 import {
     UserRepository,
     userSelect,
 } from "@/database/repositories/user/user.repository.js";
-import { RoleRepository } from "@/database/repositories/role/role.repository.js";
 import {
     ChangeRoleBody,
     ChangeRoleResponse,
@@ -52,9 +52,11 @@ function formatUserWithRole(
     user: Prisma.UserGetPayload<{ select: typeof userSelect }>
 ) {
     const role = user.userRoles[0]?.role?.name || "";
+
     const lastLogin = user.lastLogin
         ? new Date(user.lastLogin).toISOString()
         : "Never";
+
     return {
         id: user.id,
         name: user.name,

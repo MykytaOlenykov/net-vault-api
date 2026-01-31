@@ -1,15 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-import { hashing } from '../../lib/hashing/hashing.js';
+import { PrismaClient } from "@prisma/client";
+import { hashing } from "../../lib/hashing/hashing.js";
 
 const prisma = new PrismaClient();
 
 async function main() {
     // Створюємо ролі
     const roles = [
-        { name: 'Administrator', description: 'Full system access' },
-        { name: 'Operator', description: 'Device management access' },
-        { name: 'Viewer', description: 'Read-only access' },
-        { name: 'Auditor', description: 'Audit and review access' },
+        { name: "Administrator", description: "Full system access" },
+        { name: "Operator", description: "Device management access" },
+        { name: "Viewer", description: "Read-only access" },
+        { name: "Auditor", description: "Audit and review access" },
     ];
 
     for (const role of roles) {
@@ -20,23 +20,24 @@ async function main() {
         });
     }
 
-    console.log('Roles created/updated');
+    console.log("Roles created/updated");
 
     // Створюємо адміна користувача
-    const adminPassword = await hashing.hashPassword('admin123');
+    const adminPassword = await hashing.hashPassword("admin123");
+
     const adminRole = await prisma.role.findUnique({
-        where: { name: 'Administrator' },
+        where: { name: "Administrator" },
     });
 
     if (adminRole) {
         await prisma.user.upsert({
-            where: { email: 'admin@netvault.io' },
+            where: { email: "admin@netvault.io" },
             update: {},
             create: {
-                name: 'Admin User',
-                email: 'admin@netvault.io',
+                name: "Admin User",
+                email: "admin@netvault.io",
                 password: adminPassword,
-                status: 'active',
+                status: "active",
                 userRoles: {
                     create: {
                         roleId: adminRole.id,
@@ -44,12 +45,13 @@ async function main() {
                 },
             },
         });
-        console.log('Admin user created: admin@netvault.io / admin123');
+
+        console.log("Admin user created: admin@netvault.io / admin123");
     } else {
-        console.error('Administrator role not found');
+        console.error("Administrator role not found");
     }
 
-    console.log('Seed completed');
+    console.log("Seed completed");
 }
 
 main()
