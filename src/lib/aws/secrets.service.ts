@@ -19,7 +19,19 @@ export type SecretsService = {
     deleteSecret: (secretRef: string, force?: boolean) => Promise<void>;
 };
 
-export const createSecretsService = () => {
+export const createSecretsService = (): SecretsService => {
+    if (process.env.SECRET_SERVICE_DEVELOPMENT === "true") {
+        return {
+            createSecret: async () => "__SECRET_SERVICE_DEVELOPMENT__",
+
+            readSecret: async () => "__SECRET_SERVICE_DEVELOPMENT__",
+
+            updateSecret: async () => {},
+
+            deleteSecret: async () => {},
+        };
+    }
+
     return {
         createSecret: async (password: string): Promise<string> => {
             const name = `device-cred-${crypto.randomUUID()}`;

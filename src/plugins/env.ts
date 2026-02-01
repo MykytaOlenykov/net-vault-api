@@ -25,6 +25,8 @@ const configureEnv = async (fastify: FastifyInstance) => {
                 "APPLICATION_SECRET",
                 "APPLICATION_URL",
                 "PORT",
+                "REDIS_PORT",
+                "REDIS_HOST",
             ])
             .valueOf(),
         dotenv: false,
