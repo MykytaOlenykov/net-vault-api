@@ -78,7 +78,6 @@ export default [
                     next: [
                         "multiline-expression",
                         "multiline-const",
-                        "return",
                         "try",
                         "block-like",
                         "class",
@@ -92,7 +91,6 @@ export default [
                     prev: [
                         "multiline-expression",
                         "multiline-const",
-                        "return",
                         "try",
                         "block-like",
                         "class",

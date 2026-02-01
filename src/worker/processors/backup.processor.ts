@@ -1,156 +1,206 @@
 import { Job } from "bullmq";
 import { diffLines } from "diff";
 import { createHash } from "node:crypto";
-import { logger } from "../worker.utils.js";
 import { JobName } from "../worker.const.js";
 import { prisma } from "../worker.prisma.js";
-import { BackupStatus } from "@prisma/client";
+import { BackupStatus, Protocol } from "@prisma/client";
 import { connectSSH, execShell } from "../connectors/ssh.js";
+import { BackupJobData } from "@/worker/types/backup.type.js";
 import { connectTelnet, execTelnet } from "../connectors/telnet.js";
 
-export async function backupProcessor(job: Job) {
-    switch (job.name) {
-    case JobName.CheckBackupSchedule:
-        logger.info(job.data, "Checking backup schedule...");
-
+export async function backupProcessor(job: Job<BackupJobData>) {
+    if (job.name === JobName.CreateBackup) {
+        await createBackup(job.data);
         return;
+    }
 
-    case JobName.CreateBackup: {
-        // const device = await prisma.device.findUnique({
-        //   where: { id: job.data.deviceId },
-        // });
-        const device = job.data.device;
+    throw new Error("job is not supported");
+}
 
-        if (!device) {
-            throw new Error("Device not found");
-        }
+async function createBackup(data: BackupJobData) {
+    const device = await prisma.device.findUnique({
+        where: { id: data.deviceId },
+        select: {
+            id: true,
+            protocol: true,
+            ipAddress: true,
+            port: true,
+            credential: { select: { username: true, secretRef: true } },
+            deviceType: { select: { configCommand: true } },
+            configVersions: {
+                select: { versionNumber: true },
+                take: 1,
+                orderBy: { versionNumber: "desc" },
+            },
+        },
+    });
 
-        const startedAt = new Date();
-        let status = "Running";
-        let output = "";
-        let error: string | null = null;
-        const protocol = device.protocol || "ssh";
-        const commands = device.commands;
+    if (!device) {
+        throw new Error("Device not found");
+    }
 
-        if (!commands) {
-            throw new Error("Commands not found");
-        }
+    const versionNumber = (device.configVersions[0]?.versionNumber ?? 0) + 1;
 
-        try {
-            if (protocol === "telnet") {
-                const client = await connectTelnet({
-                    host: device.ip,
-                    username: device.username,
-                    password: device.password,
-                });
+    const backup = await prisma.configVersion.create({
+        data: {
+            deviceId: device.id,
+            status: BackupStatus.Running,
+            versionNumber,
+        },
+        select: { id: true },
+    });
 
-                output = await execTelnet(client, commands);
+    // TODO: add aws secret manager
+    const password = device.credential.secretRef;
 
-                if (client && typeof client.end === "function") {
-                    await client.end();
-                } else if (client && typeof client.destroy === "function") {
-                    client.destroy();
-                }
-            } else {
-                const client = await connectSSH({
-                    host: device.ip,
-                    username: device.username,
-                    password: device.password,
-                });
+    try {
+        const output = await getConfig({
+            protocol: device.protocol,
+            host: device.ipAddress,
+            port: device.port,
+            username: device.credential.username,
+            password,
+            commands: device.deviceType.configCommand.split("\n"),
+        });
 
-                output = await execShell(client, commands);
+        const configHash = createHash("sha256").update(output).digest("hex");
 
-                client.end();
-            }
-
-            status = "Success";
-        } catch (err) {
-            status = "Failed";
-            error = err instanceof Error ? err.message : String(err);
-            logger.error({ err }, "Backup failed");
-            // We re-throw later after saving the failed state
-        }
-
-        // Sanitize output (remove null bytes that Postgres rejects)
-        output = output.split("\0").join("");
-
-        // Calculate hash
-        const configHash = createHash("sha256")
-            .update(output)
-            .digest("hex");
-
-        // Get last version (with configText for diff calculation)
-        const lastVersion = await prisma.configVersion.findFirst({
-            where: { deviceId: device.id },
+        const prevVersion = await prisma.configVersion.findFirst({
+            where: {
+                deviceId: device.id,
+                id: { not: backup.id },
+                versionNumber: { lt: versionNumber },
+                isDuplicate: false,
+            },
             orderBy: { versionNumber: "desc" },
             select: {
-                versionNumber: true,
+                id: true,
                 status: true,
                 configHash: true,
                 configText: true,
             },
         });
 
-        const nextVersionNumber = (lastVersion?.versionNumber || 0) + 1;
+        const isDuplicate =
+            !!prevVersion &&
+            prevVersion.status === BackupStatus.Success &&
+            prevVersion.configHash === configHash;
 
-        // Check for duplicates (only if success)
-        let isDuplicate = false;
+        let changedLines: number | null = null;
 
         if (
-            status === "Success" &&
-                lastVersion &&
-                lastVersion.status === "Success" &&
-                lastVersion.configHash === configHash
+            prevVersion?.status === BackupStatus.Success &&
+            prevVersion.configText
         ) {
-            isDuplicate = true;
+            changedLines = calcChangedLines({
+                prev: prevVersion.configText,
+                current: output,
+            });
         }
 
-        if (isDuplicate) {
-            logger.info(
-                { deviceId: device.id },
-                "Config is identical to last version. Skipping save."
-            );
-
-            return;
-        }
-
-        // Calculate changed lines (only if config differs and we have a previous version)
-        let changedLines = 0;
-
-        if (status === "Success" && lastVersion?.configText) {
-            const diff = diffLines(lastVersion.configText, output);
-
-            changedLines = diff.reduce((count, part) => {
-                // Count added or removed lines
-                if (part.added || part.removed) {
-                    return count + (part.count || 0);
-                }
-
-                return count;
-            }, 0);
-        }
-
-        // Save to DB
-        await prisma.configVersion.create({
+        await prisma.configVersion.update({
+            where: { id: backup.id },
             data: {
-                deviceId: device.id,
-                versionNumber: nextVersionNumber,
-                status: status as BackupStatus,
-                startedAt: startedAt,
+                versionNumber,
+                status: BackupStatus.Success,
                 finishedAt: new Date(),
-                configText: status === "Success" ? output : null,
-                configHash: status === "Success" ? configHash : null,
-                changedLines: changedLines,
-                isDuplicate: isDuplicate,
-                error: error,
+                duplicateId: isDuplicate ? prevVersion.id : null,
+                changedLines,
+                isDuplicate,
+                configHash: isDuplicate ? null : configHash,
+                configText: isDuplicate ? null : output,
+            },
+        });
+    } catch (error) {
+        const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
+        await prisma.configVersion.update({
+            where: { id: backup.id },
+            data: {
+                error: errorMessage,
+                finishedAt: new Date(),
+                status: BackupStatus.Failed,
             },
         });
 
-        if (status === "Failed") {
-            throw new Error(error || "Backup failed");
+        throw error;
+    }
+
+    return;
+}
+
+async function getConfig({
+    protocol,
+    host,
+    port,
+    username,
+    password,
+    commands,
+}: {
+    protocol: Protocol;
+    host: string;
+    port: number;
+    username: string;
+    password: string;
+    commands: string[];
+}) {
+    if (protocol === Protocol.Telnet) {
+        const client = await connectTelnet({
+            host,
+            port,
+            username,
+            password,
+        });
+
+        const output = await execTelnet(client, commands);
+
+        // TODO: check
+        if (client && typeof client.end === "function") {
+            await client.end();
+        } else if (client && typeof client.destroy === "function") {
+            client.destroy();
         }
 
-        return;
+        return sanitizeOutput(output);
     }
-    }
+
+    const client = await connectSSH({
+        host,
+        port,
+        username,
+        password,
+    });
+
+    const output = await execShell(client, commands);
+
+    client.end();
+
+    // TODO: check
+    // client.destroy();
+
+    return sanitizeOutput(output);
+}
+
+function sanitizeOutput(output: string) {
+    return output.split("\0").join("");
+}
+
+function calcChangedLines({
+    prev,
+    current,
+}: {
+    prev: string;
+    current: string;
+}) {
+    const diff = diffLines(prev, current);
+
+    return diff.reduce((count, part) => {
+        // Count added or removed lines
+        if (part.added || part.removed) {
+            return count + (part.count || 0);
+        }
+
+        return count;
+    }, 0);
 }

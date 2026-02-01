@@ -17,7 +17,7 @@ export const configVersionSchema = z.object({
     configText: z.string().nullable(),
     configHash: z.string().nullable(),
 
-    changedLines: z.number(),
+    changedLines: z.number().nullable(),
 
     isDuplicate: z.boolean(),
 
