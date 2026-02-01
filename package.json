@@ -81,6 +81,7 @@
         "vitest-mock-extended": "^3.1.0"
     },
     "dependencies": {
+        "@aws-sdk/client-secrets-manager": "^3.980.0",
         "@fastify/autoload": "^6.3.1",
         "@fastify/basic-auth": "^6.2.0",
         "@fastify/cors": "^11.1.0",

@@ -8,6 +8,9 @@ import { BackupStatus, Protocol } from "@prisma/client";
 import { connectSSH, execShell } from "../connectors/ssh.js";
 import { BackupJobData } from "@/worker/types/backup.type.js";
 import { connectTelnet, execTelnet } from "../connectors/telnet.js";
+import { createSecretsService } from "@/lib/aws/secrets.service.js";
+
+const secretsService = createSecretsService();
 
 export async function backupProcessor(job: Job<BackupJobData>) {
     if (job.name === BackupJobName.CreateBackup) {
@@ -54,10 +57,11 @@ async function createBackup(data: BackupJobData) {
         select: { id: true },
     });
 
-    // TODO: add aws secret manager
-    const password = device.credential.secretRef;
-
     try {
+        const password = await secretsService.readSecret(
+            device.credential.secretRef
+        );
+
         const output = await getConfig({
             protocol: device.protocol,
             host: device.ipAddress,

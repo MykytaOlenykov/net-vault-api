@@ -8,6 +8,7 @@ import { AuthService } from "@/modules/auth/auth.service.js";
 import { AuthHandler } from "@/modules/auth/auth.handler.js";
 import { UserService } from "@/modules/user/user.service.js";
 import { UserHandler } from "@/modules/user/user.handler.js";
+import { SecretsService } from "@/lib/aws/secrets.service.js";
 import { DeviceService } from "@/modules/device/device.service.js";
 import { DeviceHandler } from "@/modules/device/device.handler.js";
 import { AnalyticsService } from "@/modules/analytics/analytics.service.js";
@@ -26,6 +27,8 @@ export type Cradle = {
     redis: Redis;
     config: EnvConfig;
     jwt: JWT;
+
+    secretsService: SecretsService;
 
     applicationService: ApplicationService;
     applicationHandler: ApplicationHandler;

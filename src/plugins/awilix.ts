@@ -34,6 +34,7 @@ const configureAwilix = async (fastify: FastifyInstance) => {
                 __dirname,
                 "../modules/**/*.{service,handler,queue}.{js,ts}"
             ),
+            path.join(__dirname, "../lib/**/*.service.{js,ts}"),
             path.join(
                 __dirname,
                 "../database/repositories/{*,**/*}.repository.{js,ts}"

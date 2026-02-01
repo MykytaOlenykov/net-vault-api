@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { BackupQueue } from "@/worker/types/backup.type.js";
+import { SecretsService } from "@/lib/aws/secrets.service.js";
 import { getBackupScheduleKey } from "@/worker/worker.utils.js";
 import { getPaginationParams } from "@/lib/utils/pagination.util.js";
 import {
@@ -52,7 +53,8 @@ export type DeviceService = {
 export const createService = (
     prisma: PrismaClient,
     deviceRepository: DeviceRepository,
-    backupQueue: BackupQueue
+    backupQueue: BackupQueue,
+    secretsService: SecretsService
 ): DeviceService => {
     async function prepareDeviceRelations(
         tx: Prisma.TransactionClient,
@@ -141,13 +143,15 @@ export const createService = (
         createDevice: async ({
             payload: { tags, username, password, ...payload },
         }) => {
+            const secretRef = await secretsService.createSecret(password);
+
             const device = await prisma.$transaction(async (tx) => {
                 const tagIds = await prepareDeviceRelations(tx, tags);
 
                 // TODO: add aws
                 const credential = await tx.credential.create({
                     data: {
-                        secretRef: password,
+                        secretRef,
                         username,
                     },
                 });
@@ -253,7 +257,17 @@ export const createService = (
         deleteDeviceById: async ({ deviceId }) => {
             const device = await deviceRepository.findUniqueOrFail({
                 where: { id: deviceId },
+                select: {
+                    id: true,
+                    credential: {
+                        select: {
+                            secretRef: true,
+                        },
+                    },
+                },
             });
+
+            await secretsService.deleteSecret(device.credential.secretRef);
 
             await deviceRepository.delete({ where: { id: deviceId } });
 
