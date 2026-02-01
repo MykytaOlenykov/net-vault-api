@@ -46,7 +46,7 @@ export default [
             "@typescript-eslint/no-use-before-define": "off",
 
             indent: ["error", 4],
-            "linebreak-style": ["error", "unix"],
+            // "linebreak-style": ["error", "unix"],
             quotes: ["error", "double", "avoid-escape"],
             semi: ["error", "always"],
 
@@ -78,7 +78,6 @@ export default [
                     next: [
                         "multiline-expression",
                         "multiline-const",
-                        "return",
                         "try",
                         "block-like",
                         "class",
@@ -92,7 +91,6 @@ export default [
                     prev: [
                         "multiline-expression",
                         "multiline-const",
-                        "return",
                         "try",
                         "block-like",
                         "class",

@@ -78,17 +78,23 @@ model Credential {
   @@map("credentials")
 }
 
+enum Protocol {
+  SSH
+  Telnet
+}
+
 model Device {
-  id        String @id @default(uuid()) @db.Uuid
+  id        String   @id @default(uuid()) @db.Uuid
   name      String
-  ipAddress String @map("ip_address")
-  port      Int    @default(22)
+  ipAddress String   @map("ip_address")
+  port      Int      @default(22)
+  protocol  Protocol @default(SSH)
 
   deviceTypeId String     @map("device_type_id") @db.Uuid
   deviceType   DeviceType @relation(fields: [deviceTypeId], references: [id], onDelete: Restrict)
 
-  credentialId String?     @map("credential_id") @db.Uuid
-  credential   Credential? @relation(fields: [credentialId], references: [id], onDelete: SetNull)
+  credentialId String     @map("credential_id") @db.Uuid
+  credential   Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
 
   backupSchedule String? @map("backup_schedule")
 
@@ -120,10 +126,15 @@ model ConfigVersion {
   configText String? @map("config_text") @db.Text
   configHash String? @map("config_hash")
 
-  changedLines Int     @default(0) @map("changed_lines")
+  changedLines Int?    @map("changed_lines")
   isDuplicate  Boolean @default(false) @map("is_duplicate")
 
+  duplicateId String?        @map("duplicate_id") @db.Uuid
+  duplicate   ConfigVersion? @relation("duplicatedConfigVersions", fields: [duplicateId], references: [id], onDelete: Restrict)
+
   error String? @map("error") @db.Text
+
+  configVersions ConfigVersion[] @relation("duplicatedConfigVersions")
 
   @@unique([deviceId, versionNumber])
   @@index([deviceId, startedAt])
@@ -157,10 +168,10 @@ model Tag {
 }
 
 model Role {
-  id          String    @id @default(uuid()) @db.Uuid
-  name        String    @unique
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
   description String?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   userRoles UserRole[]
 
@@ -168,8 +179,8 @@ model Role {
 }
 
 model UserRole {
-  userId    String   @map("user_id") @db.Uuid
-  roleId    String   @map("role_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
   assignedAt DateTime @default(now()) @map("assigned_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

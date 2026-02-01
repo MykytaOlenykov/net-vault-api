@@ -2,9 +2,7 @@ import "dotenv/config";
 import { redis } from "./worker.redis.js";
 import { logger } from "./worker.utils.js";
 import { prisma } from "./worker.prisma.js";
-import { JobName } from "@/worker/worker.const.js";
 import { startBackupWorker } from "@/worker/worker.js";
-import { backupQueue } from "@/worker/queues/backup.queue.js";
 
 async function main() {
     await prisma.$connect();
@@ -18,17 +16,6 @@ async function main() {
     }
 
     startBackupWorker();
-
-    await backupQueue.upsertJobScheduler(
-        JobName.CheckBackupSchedule,
-        {
-            pattern: "0 * * * *",
-            immediately: true,
-        },
-        {
-            name: JobName.CheckBackupSchedule,
-        }
-    );
 }
 
 await main();

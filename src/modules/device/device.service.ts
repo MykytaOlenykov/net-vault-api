@@ -133,6 +133,14 @@ export const createService = (
             const device = await prisma.$transaction(async (tx) => {
                 const tagIds = await prepareDeviceRelations(tx, tags);
 
+                // TODO: add aws
+                const credential = await tx.credential.create({
+                    data: {
+                        secretRef: process.env.SSH_PASSWORD ?? "",
+                        username: process.env.SSH_USERNAME ?? "",
+                    },
+                });
+
                 return tx.device.create({
                     data: {
                         ...payload,
@@ -141,6 +149,7 @@ export const createService = (
                                 data: tagIds.map(({ id }) => ({ tagId: id })),
                             },
                         },
+                        credentialId: credential.id,
                     },
                     select: deviceSelect,
                 });

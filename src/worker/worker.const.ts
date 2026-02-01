@@ -3,6 +3,5 @@ export enum QueueName {
 }
 
 export enum JobName {
-    CheckBackupSchedule = "check-backup-schedule",
     CreateBackup = "create-backup",
 }
