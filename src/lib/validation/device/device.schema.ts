@@ -1,4 +1,5 @@
 import z from "zod";
+import { Protocol } from "@prisma/client";
 import { paginationSchema } from "@/lib/validation/application/application.schema.js";
 
 const deviceSchema = z.object({
@@ -15,6 +16,7 @@ const deviceSchema = z.object({
     backupSchedule: z.string().nullable(),
 
     isActive: z.boolean(),
+    protocol: z.enum(Protocol),
     createdAt: z.date(),
     updatedAt: z.date(),
 
@@ -54,6 +56,7 @@ export const createDeviceBodySchema = z.object({
     port: z.number(),
 
     deviceTypeId: z.uuid(),
+    protocol: z.enum(Protocol),
 
     backupSchedule: z.string().nullable(),
 
@@ -78,6 +81,7 @@ export const updateDeviceBodySchema = z.object({
     port: z.number(),
 
     deviceTypeId: z.uuid(),
+    protocol: z.enum(Protocol),
 
     backupSchedule: z.string().nullable(),
 

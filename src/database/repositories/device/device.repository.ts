@@ -29,6 +29,7 @@ export const deviceSelect = {
     isActive: true,
     createdAt: true,
     updatedAt: true,
+    protocol: true,
 
     deviceTags: {
         select: {
