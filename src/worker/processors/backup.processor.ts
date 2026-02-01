@@ -15,15 +15,6 @@ export async function backupProcessor(job: Job) {
 
         return;
 
-        /*     case JobName.CreateBackup:
-        logger.info(job.data, "Creating backup...");
- 
-        return;
- 
-    default:
-        throw new Error(`Unknown job: ${job.name}`);
-    } */
-
     case JobName.CreateBackup: {
         // const device = await prisma.device.findUnique({
         //   where: { id: job.data.deviceId },

@@ -13,7 +13,7 @@ export function startBackupWorker() {
     worker.on("failed", (job, err) => {
         logger.error(
             { jobId: job?.id, name: job?.name, err },
-            "Email worker job failed"
+            "Backup worker job failed"
         );
     });
 
