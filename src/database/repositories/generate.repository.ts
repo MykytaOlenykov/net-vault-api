@@ -12,6 +12,7 @@ export type BaseRepository<T extends Uncapitalize<Model>> = {
     delete: PrismaClient[T]["delete"];
     findMany: PrismaClient[T]["findMany"];
     deleteMany: PrismaClient[T]["deleteMany"];
+    groupBy: PrismaClient[T]["groupBy"];
 };
 
 type Model = Prisma.ModelName;
@@ -70,6 +71,8 @@ export const generateRepository = <T extends Model>(
         "deleteMany"
     ] as (typeof delegate)["deleteMany"];
 
+    const groupBy = delegate["groupBy"] as (typeof delegate)["groupBy"];
+
     return {
         create,
         createMany,
@@ -82,6 +85,7 @@ export const generateRepository = <T extends Model>(
         updateMany,
         delete: deleteOne,
         deleteMany,
+        groupBy,
     };
 };
 

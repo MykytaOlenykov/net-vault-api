@@ -1,6 +1,14 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { DeviceService } from "@/modules/device/device.service.js";
+import { ConfigVersionService } from "@/modules/device/config-version.service.js";
+import {
+    ConfigVersionParams,
+    GetConfigVersionByIdResponse,
+    GetConfigVersionsQuerystring,
+    GetConfigVersionsResponse,
+    GetLastConfigVersionResponse,
+} from "@/lib/validation/config-version/config-version.schema.js";
 import {
     CreateDeviceBody,
     CreateDeviceResponse,
@@ -46,9 +54,30 @@ export type DeviceHandler = {
     getTags: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 
     getTypes: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+
+    getConfigVersions: (
+        request: FastifyRequest<{
+            Params: DeviceParams;
+            Querystring: GetConfigVersionsQuerystring;
+        }>,
+        reply: FastifyReply
+    ) => Promise<void>;
+
+    getConfigVersionById: (
+        request: FastifyRequest<{ Params: ConfigVersionParams }>,
+        reply: FastifyReply
+    ) => Promise<void>;
+
+    getLastConfigVersion: (
+        request: FastifyRequest<{ Params: DeviceParams }>,
+        reply: FastifyReply
+    ) => Promise<void>;
 };
 
-export const createHandler = (deviceService: DeviceService): DeviceHandler => {
+export const createHandler = (
+    deviceService: DeviceService,
+    configVersionService: ConfigVersionService
+): DeviceHandler => {
     return {
         getDevices: async (request, reply) => {
             const { data } = await deviceService.getDevices({
@@ -111,6 +140,37 @@ export const createHandler = (deviceService: DeviceService): DeviceHandler => {
             const { data } = await deviceService.getTypes();
 
             const response: GetDeviceTypesResponse = { data };
+
+            return reply.status(200).send(response);
+        },
+
+        getConfigVersions: async (request, reply) => {
+            const { data } = await configVersionService.getConfigVersions({
+                deviceId: request.params.deviceId,
+                query: request.query,
+            });
+
+            const response: GetConfigVersionsResponse = { data };
+
+            return reply.status(200).send(response);
+        },
+
+        getConfigVersionById: async (request, reply) => {
+            const { data } = await configVersionService.getConfigVersionById({
+                configId: request.params.configId,
+            });
+
+            const response: GetConfigVersionByIdResponse = { data };
+
+            return reply.status(200).send(response);
+        },
+
+        getLastConfigVersion: async (request, reply) => {
+            const { data } = await configVersionService.getLastConfigVersion({
+                deviceId: request.params.deviceId,
+            });
+
+            const response: GetLastConfigVersionResponse = { data };
 
             return reply.status(200).send(response);
         },

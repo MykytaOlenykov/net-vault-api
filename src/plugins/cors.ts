@@ -6,6 +6,7 @@ const configureCors = async (fastify: FastifyInstance) => {
     await fastify.register(fastifyCors, {
         origin: true,
         credentials: true,
+        methods: ["*"],
     });
 };
 

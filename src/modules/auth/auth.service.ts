@@ -57,7 +57,10 @@ export const createService = (
 
         await userRepository.update({
             where: { id: user.id },
-            data: { token },
+            data: { 
+                token,
+                lastLogin: new Date(),
+            },
         });
 
         return {

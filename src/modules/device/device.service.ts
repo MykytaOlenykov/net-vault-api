@@ -104,14 +104,29 @@ export const createService = (
 
             const [devices, total] = await prisma.$transaction([
                 deviceRepository.findMany({
-                    select: deviceSelect,
+                    select: {
+                        ...deviceSelect,
+                        configVersions: {
+                            select: { startedAt: true },
+                            orderBy: { startedAt: "desc" },
+                            take: 1,
+                        },
+                    },
                     skip,
                     take,
                 }),
                 deviceRepository.count(),
             ]);
 
-            return { data: { devices, total } };
+            return {
+                data: {
+                    devices: devices.map((d) => ({
+                        ...d,
+                        lastBackup: d.configVersions[0]?.startedAt ?? null,
+                    })),
+                    total,
+                },
+            };
         },
 
         createDevice: async ({ payload: { tags, ...payload } }) => {
