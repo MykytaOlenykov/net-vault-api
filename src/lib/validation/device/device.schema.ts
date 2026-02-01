@@ -54,6 +54,8 @@ export const createDeviceBodySchema = z.object({
     name: z.string(),
     ipAddress: z.string(),
     port: z.number(),
+    username: z.string(),
+    password: z.string(),
 
     deviceTypeId: z.uuid(),
     protocol: z.enum(Protocol),

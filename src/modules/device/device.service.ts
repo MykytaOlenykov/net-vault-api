@@ -20,6 +20,7 @@ import {
     GetDevicesResponse,
     GetDeviceTypesResponse,
     GetTagsResponse,
+    UpdateDeviceBody,
     UpdateDeviceResponse,
 } from "@/lib/validation/device/device.schema.js";
 
@@ -34,7 +35,7 @@ export type DeviceService = {
 
     updateDevice: (args: {
         deviceId: string;
-        payload: CreateDeviceBody;
+        payload: UpdateDeviceBody;
     }) => Promise<UpdateDeviceResponse>;
 
     getDeviceById: (args: {
@@ -137,15 +138,17 @@ export const createService = (
             };
         },
 
-        createDevice: async ({ payload: { tags, ...payload } }) => {
+        createDevice: async ({
+            payload: { tags, username, password, ...payload },
+        }) => {
             const device = await prisma.$transaction(async (tx) => {
                 const tagIds = await prepareDeviceRelations(tx, tags);
 
                 // TODO: add aws
                 const credential = await tx.credential.create({
                     data: {
-                        secretRef: process.env.SSH_PASSWORD ?? "",
-                        username: process.env.SSH_USERNAME ?? "",
+                        secretRef: password,
+                        username,
                     },
                 });
 
@@ -163,30 +166,37 @@ export const createService = (
                 });
             });
 
-            await backupQueue.upsertJobScheduler(
-                getBackupScheduleKey(device.id),
-                {
-                    pattern: device.backupSchedule ?? DEFAULT_SCHEDULE_PATTERN,
-                    tz: SCHEDULE_TZ,
-                },
-                {
-                    name: BackupJobName.CreateBackup,
-                    data: { deviceId: device.id },
-                    opts: {
-                        removeOnComplete: true,
-                        removeOnFail: true,
+            if (device.isActive) {
+                await backupQueue.upsertJobScheduler(
+                    getBackupScheduleKey(device.id),
+                    {
+                        pattern:
+                            device.backupSchedule ?? DEFAULT_SCHEDULE_PATTERN,
+                        tz: SCHEDULE_TZ,
                     },
-                }
-            );
+                    {
+                        name: BackupJobName.CreateBackup,
+                        data: { deviceId: device.id },
+                        opts: {
+                            removeOnComplete: true,
+                            removeOnFail: true,
+                        },
+                    }
+                );
+            }
 
             return { data: { device } };
         },
 
         updateDevice: async ({ deviceId, payload: { tags, ...payload } }) => {
-            const { backupSchedule } = await deviceRepository.findUniqueOrFail({
-                where: { id: deviceId },
-                select: { backupSchedule: true },
-            });
+            const { backupSchedule, isActive } =
+                await deviceRepository.findUniqueOrFail({
+                    where: { id: deviceId },
+                    select: {
+                        backupSchedule: true,
+                        isActive: true,
+                    },
+                });
 
             const device = await prisma.$transaction(async (tx) => {
                 const tagIds = await prepareDeviceRelations(tx, tags);
@@ -207,11 +217,18 @@ export const createService = (
                 });
             });
 
-            if (device.backupSchedule !== backupSchedule) {
+            const isChanged = device.backupSchedule !== backupSchedule;
+
+            if (
+                (isChanged && device.isActive) ||
+                (isActive && !device.isActive)
+            ) {
                 await backupQueue.removeJobScheduler(
                     getBackupScheduleKey(device.id)
                 );
+            }
 
+            if (isChanged && device.isActive) {
                 await backupQueue.upsertJobScheduler(
                     getBackupScheduleKey(device.id),
                     {
