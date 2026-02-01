@@ -6,4 +6,6 @@ export type EnvConfig = {
     APPLICATION_SECRET: string;
     APPLICATION_URL: string;
     DOCS_PASSWORD: string | undefined;
+    REDIS_PORT: number;
+    REDIS_HOST: string;
 };

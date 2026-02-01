@@ -105,7 +105,6 @@ model Device {
   configVersions ConfigVersion[]
   deviceTags     DeviceTag[]
 
-  @@unique([ipAddress, port])
   @@index([isActive])
   @@index([deviceTypeId])
   @@index([credentialId])

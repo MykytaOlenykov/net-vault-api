@@ -1,15 +1,19 @@
 import { Job } from "bullmq";
 import { diffLines } from "diff";
 import { createHash } from "node:crypto";
-import { JobName } from "../worker.const.js";
 import { prisma } from "../worker.prisma.js";
+import { logger } from "@/worker/worker.utils.js";
+import { BackupJobName } from "../worker.const.js";
 import { BackupStatus, Protocol } from "@prisma/client";
 import { connectSSH, execShell } from "../connectors/ssh.js";
 import { BackupJobData } from "@/worker/types/backup.type.js";
 import { connectTelnet, execTelnet } from "../connectors/telnet.js";
 
 export async function backupProcessor(job: Job<BackupJobData>) {
-    if (job.name === JobName.CreateBackup) {
+    if (job.name === BackupJobName.CreateBackup) {
+        logger.info(`[BACKUP] ${BackupJobName.CreateBackup} job started`);
+        // TODO: remove
+        return;
         await createBackup(job.data);
         return;
     }

@@ -1,6 +1,13 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
+import { BackupQueue } from "@/worker/types/backup.type.js";
+import { getBackupScheduleKey } from "@/worker/worker.utils.js";
 import { getPaginationParams } from "@/lib/utils/pagination.util.js";
+import {
+    BackupJobName,
+    DEFAULT_SCHEDULE_PATTERN,
+    SCHEDULE_TZ,
+} from "@/worker/worker.const.js";
 import {
     DeviceRepository,
     deviceSelect,
@@ -43,7 +50,8 @@ export type DeviceService = {
 
 export const createService = (
     prisma: PrismaClient,
-    deviceRepository: DeviceRepository
+    deviceRepository: DeviceRepository,
+    backupQueue: BackupQueue
 ): DeviceService => {
     async function prepareDeviceRelations(
         tx: Prisma.TransactionClient,
@@ -155,12 +163,29 @@ export const createService = (
                 });
             });
 
+            await backupQueue.upsertJobScheduler(
+                getBackupScheduleKey(device.id),
+                {
+                    pattern: device.backupSchedule ?? DEFAULT_SCHEDULE_PATTERN,
+                    tz: SCHEDULE_TZ,
+                },
+                {
+                    name: BackupJobName.CreateBackup,
+                    data: { deviceId: device.id },
+                    opts: {
+                        removeOnComplete: true,
+                        removeOnFail: true,
+                    },
+                }
+            );
+
             return { data: { device } };
         },
 
         updateDevice: async ({ deviceId, payload: { tags, ...payload } }) => {
-            await deviceRepository.findUniqueOrFail({
+            const { backupSchedule } = await deviceRepository.findUniqueOrFail({
                 where: { id: deviceId },
+                select: { backupSchedule: true },
             });
 
             const device = await prisma.$transaction(async (tx) => {
@@ -182,15 +207,42 @@ export const createService = (
                 });
             });
 
+            if (device.backupSchedule !== backupSchedule) {
+                await backupQueue.removeJobScheduler(
+                    getBackupScheduleKey(device.id)
+                );
+
+                await backupQueue.upsertJobScheduler(
+                    getBackupScheduleKey(device.id),
+                    {
+                        pattern:
+                            device.backupSchedule ?? DEFAULT_SCHEDULE_PATTERN,
+                        tz: SCHEDULE_TZ,
+                    },
+                    {
+                        name: BackupJobName.CreateBackup,
+                        data: { deviceId: device.id },
+                        opts: {
+                            removeOnComplete: true,
+                            removeOnFail: true,
+                        },
+                    }
+                );
+            }
+
             return { data: { device } };
         },
 
         deleteDeviceById: async ({ deviceId }) => {
-            await deviceRepository.findUniqueOrFail({
+            const device = await deviceRepository.findUniqueOrFail({
                 where: { id: deviceId },
             });
 
             await deviceRepository.delete({ where: { id: deviceId } });
+
+            await backupQueue.removeJobScheduler(
+                getBackupScheduleKey(device.id)
+            );
         },
 
         getDeviceById: async ({ deviceId }) => {
