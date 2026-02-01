@@ -17,6 +17,8 @@ const configureEnv = async (fastify: FastifyInstance) => {
             .prop("PORT", S.number())
             .prop("DOCS_PASSWORD", S.string())
             .prop("HOST", S.string().default("0.0.0.0"))
+            .prop("REDIS_PORT", S.number())
+            .prop("REDIS_HOST", S.string())
             .required([
                 "NODE_ENV",
                 "DATABASE_URL",

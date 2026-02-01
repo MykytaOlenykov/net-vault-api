@@ -1,3 +1,4 @@
+import { Redis } from "ioredis";
 import { AwilixContainer } from "awilix";
 import { EnvConfig } from "./env.type.js";
 import { PrismaClient } from "@prisma/client";
@@ -9,6 +10,7 @@ declare module "fastify" {
     export interface FastifyInstance {
         config: EnvConfig;
         prisma: PrismaClient;
+        redis: Redis;
         di: AwilixContainer<Cradle>;
 
         authenticate: Authenticate;

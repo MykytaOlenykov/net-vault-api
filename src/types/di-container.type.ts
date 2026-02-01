@@ -1,7 +1,9 @@
+import { Redis } from "ioredis";
 import { JWT } from "@fastify/jwt";
 import { EnvConfig } from "./env.type.js";
 import { FastifyBaseLogger } from "fastify";
 import { PrismaClient } from "@prisma/client/extension";
+import { BackupQueue } from "@/worker/types/backup.type.js";
 import { AuthService } from "@/modules/auth/auth.service.js";
 import { AuthHandler } from "@/modules/auth/auth.handler.js";
 import { UserService } from "@/modules/user/user.service.js";
@@ -21,6 +23,7 @@ import { ConfigVersionRepository } from "@/database/repositories/config-version/
 export type Cradle = {
     log: FastifyBaseLogger;
     prisma: PrismaClient;
+    redis: Redis;
     config: EnvConfig;
     jwt: JWT;
 
@@ -41,6 +44,7 @@ export type Cradle = {
     deviceRepository: DeviceRepository;
     deviceService: DeviceService;
     deviceHandler: DeviceHandler;
+    backupQueue: BackupQueue;
 
     configVersionRepository: ConfigVersionRepository;
     configVersionService: ConfigVersionService;
