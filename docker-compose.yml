@@ -33,6 +33,8 @@ services:
             - primary
         volumes:
             - ./src:/home/node/app/src
+            - $HOME/.aws/credentials:/root/.aws/credentials:ro
+            - $HOME/.aws/config:/root/.aws/config:ro
 
     worker:
         build:
@@ -49,6 +51,8 @@ services:
             - primary
         volumes:
             - ./src:/home/node/app/src
+            - $HOME/.aws/credentials:/root/.aws/credentials:ro
+            - $HOME/.aws/config:/root/.aws/config:ro
 
     redis:
         image: redis:7.2
