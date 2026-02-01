@@ -264,12 +264,20 @@ export const createService = (
                             secretRef: true,
                         },
                     },
+                    credentialId: true,
                 },
             });
 
             await secretsService.deleteSecret(device.credential.secretRef);
 
-            await deviceRepository.delete({ where: { id: deviceId } });
+            await prisma.$transaction(async (tx) => {
+                await Promise.all([
+                    tx.device.delete({ where: { id: deviceId } }),
+                    tx.credential.delete({
+                        where: { id: device.credentialId },
+                    }),
+                ]);
+            });
 
             await backupQueue.removeJobScheduler(
                 getBackupScheduleKey(device.id)
