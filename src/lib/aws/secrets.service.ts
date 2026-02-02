@@ -1,10 +1,11 @@
+import { logger } from "@/worker/worker.utils.js";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import {
-    SecretsManagerClient,
-    GetSecretValueCommand,
     CreateSecretCommand,
-    UpdateSecretCommand,
     DeleteSecretCommand,
+    GetSecretValueCommand,
+    SecretsManagerClient,
+    UpdateSecretCommand,
 } from "@aws-sdk/client-secrets-manager";
 
 const client = new SecretsManagerClient();
@@ -24,7 +25,16 @@ export const createSecretsService = (): SecretsService => {
         return {
             createSecret: async () => "__SECRET_SERVICE_DEVELOPMENT__",
 
-            readSecret: async () => "__SECRET_SERVICE_DEVELOPMENT__",
+            readSecret: async () => {
+                const secret = process.env.SSH_PASSWORD;
+
+                if (!secret) {
+                    logger.error("[CONFIG ERROR] SSH_PASSWORD is not set");
+                    throw new Error("SSH_PASSWORD is required");
+                }
+
+                return secret;
+            },
 
             updateSecret: async () => {},
 
