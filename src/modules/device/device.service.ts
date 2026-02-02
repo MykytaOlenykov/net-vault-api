@@ -325,7 +325,7 @@ export const createService = (
                 },
             });
 
-            const jobId = `backup:${deviceId}`;
+            const jobId = `backup-${deviceId}`;
 
             const existingJob = await backupQueue.getJob(jobId);
 
@@ -335,12 +335,19 @@ export const createService = (
                 if (ACTIVE_BACKUP_JOB_STATES.has(state)) {
                     throw new ConflictError("Backup is already in progress");
                 }
+
+                await existingJob.remove();
             }
 
             await backupQueue.add(
                 BackupJobName.CreateBackup,
                 { deviceId: device.id },
-                { jobId }
+                {
+                    jobId,
+                    removeOnComplete: true,
+                    removeOnFail: true,
+                    attempts: 1,
+                }
             );
 
             return { message: "Backup process has been triggered" };
