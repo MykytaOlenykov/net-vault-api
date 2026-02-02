@@ -180,4 +180,17 @@ export const createDeviceRoutes = (
         },
         deviceHandler.getLastConfigVersion
     );
+
+    fastify.post(
+        "/:deviceId/configs",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Trigger backup",
+                params: deviceParamsSchema,
+            },
+        },
+        deviceHandler.triggerBackup
+    );
 };
