@@ -1,4 +1,6 @@
+import { JobState } from "bullmq";
 import { Prisma, PrismaClient } from "@prisma/client";
+import { ConflictError } from "@/lib/errors/errors.js";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { BackupQueue } from "@/worker/types/backup.type.js";
 import { SecretsService } from "@/lib/aws/secrets.service.js";
@@ -48,6 +50,8 @@ export type DeviceService = {
     getTags: () => Promise<GetTagsResponse>;
 
     getTypes: () => Promise<GetDeviceTypesResponse>;
+
+    triggerBackup: (args: { deviceId: string }) => Promise<{ message: string }>;
 };
 
 export const createService = (
@@ -56,6 +60,12 @@ export const createService = (
     backupQueue: BackupQueue,
     secretsService: SecretsService
 ): DeviceService => {
+    const ACTIVE_BACKUP_JOB_STATES = new Set<JobState | "unknown">([
+        "waiting",
+        "active",
+        "delayed",
+    ]);
+
     async function prepareDeviceRelations(
         tx: Prisma.TransactionClient,
         tags: string[]
@@ -305,6 +315,35 @@ export const createService = (
             });
 
             return { data: { types } };
+        },
+
+        triggerBackup: async ({ deviceId }) => {
+            const device = await deviceRepository.findUniqueOrFail({
+                where: { id: deviceId },
+                select: {
+                    id: true,
+                },
+            });
+
+            const jobId = `backup:${deviceId}`;
+
+            const existingJob = await backupQueue.getJob(jobId);
+
+            if (existingJob) {
+                const state = await existingJob.getState();
+
+                if (ACTIVE_BACKUP_JOB_STATES.has(state)) {
+                    throw new ConflictError("Backup is already in progress");
+                }
+            }
+
+            await backupQueue.add(
+                BackupJobName.CreateBackup,
+                { deviceId: device.id },
+                { jobId }
+            );
+
+            return { message: "Backup process has been triggered" };
         },
     };
 };

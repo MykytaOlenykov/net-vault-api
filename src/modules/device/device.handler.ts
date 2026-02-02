@@ -72,6 +72,11 @@ export type DeviceHandler = {
         request: FastifyRequest<{ Params: DeviceParams }>,
         reply: FastifyReply
     ) => Promise<void>;
+
+    triggerBackup: (
+        request: FastifyRequest<{ Params: DeviceParams }>,
+        reply: FastifyReply
+    ) => Promise<void>;
 };
 
 export const createHandler = (
@@ -171,6 +176,16 @@ export const createHandler = (
             });
 
             const response: GetLastConfigVersionResponse = { data };
+
+            return reply.status(200).send(response);
+        },
+
+        triggerBackup: async (request, reply) => {
+            const { message } = await deviceService.triggerBackup({
+                deviceId: request.params.deviceId,
+            });
+
+            const response = { message };
 
             return reply.status(200).send(response);
         },
