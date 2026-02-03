@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { AnalyticsHandler } from "./analytics.handler.js";
 import { getAnalyticsResponseSchema } from "@/lib/validation/analytics/analytics.schema.js";
-import { getDevicesWithConfigChangesResponseSchema } from "@/lib/validation/analytics/devices-with-config-changes.schema.js";
+import { getDevicesWithConfigChangesResponseSchema } from "@/lib/validation/analytics/analytics.schema.js";
 
 export const createAnalyticsRoutes = (
     fastify: FastifyInstance,

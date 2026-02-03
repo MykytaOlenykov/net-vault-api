@@ -1,20 +1,17 @@
 import { BackupStatus } from "@prisma/client";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
-import { GetAnalyticsResponse } from "@/lib/validation/analytics/analytics.schema.js";
 import { DeviceRepository } from "@/database/repositories/device/device.repository.js";
 import { ConfigVersionRepository } from "@/database/repositories/config-version/config-version.repository.js";
+import {
+    GetAnalyticsResponse,
+    GetDevicesWithConfigChangesResponse,
+} from "@/lib/validation/analytics/analytics.schema.js";
 
 export type AnalyticsService = {
     getAnalytics: () => Promise<GetAnalyticsResponse["data"]>;
-    getDevicesWithConfigChanges: () => Promise<{
-        total: number;
-        devices: {
-            id: string;
-            name: string;
-            configChanges: number;
-            lastBackup: Date | null;
-        }[];
-    }>;
+    getDevicesWithConfigChanges: () => Promise<
+        GetDevicesWithConfigChangesResponse["data"]
+    >;
 };
 
 export const createAnalyticsService = (

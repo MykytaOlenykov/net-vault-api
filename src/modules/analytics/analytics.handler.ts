@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { AnalyticsService } from "./analytics.service.js";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { GetAnalyticsResponse } from "@/lib/validation/analytics/analytics.schema.js";
-import { GetDevicesWithConfigChangesResponse } from "@/lib/validation/analytics/devices-with-config-changes.schema.js";
+import { GetDevicesWithConfigChangesResponse } from "@/lib/validation/analytics/analytics.schema.js";
 
 export type AnalyticsHandler = {
     getAnalytics: (
@@ -20,7 +20,6 @@ export const createAnalyticsHandler = (
     analyticsService: AnalyticsService
 ): AnalyticsHandler => {
     return {
-        // 🔹 існуючий endpoint — БЕЗ ЗМІН
         getAnalytics: async (_request, reply) => {
             const data = await analyticsService.getAnalytics();
 
@@ -31,7 +30,6 @@ export const createAnalyticsHandler = (
             return reply.status(200).send(response);
         },
 
-        // 🔹 НОВИЙ endpoint для таблиці
         getDevicesWithConfigChanges: async (_request, reply) => {
             const data = await analyticsService.getDevicesWithConfigChanges();
 
