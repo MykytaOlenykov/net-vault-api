@@ -6,6 +6,15 @@ import { ConfigVersionRepository } from "@/database/repositories/config-version/
 
 export type AnalyticsService = {
     getAnalytics: () => Promise<GetAnalyticsResponse["data"]>;
+    getDevicesWithConfigChanges: () => Promise<{
+        total: number;
+        devices: {
+            id: string;
+            name: string;
+            configChanges: number;
+            lastBackup: Date | null;
+        }[];
+    }>;
 };
 
 export const createAnalyticsService = (
@@ -33,6 +42,52 @@ export const createAnalyticsService = (
             deviceTotal,
             backupTotals: backupGroupedTotal,
             backupTotalLast24Hours,
+        };
+    },
+    getDevicesWithConfigChanges: async () => {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+        const aggregated = await configVersionRepository.groupBy({
+            by: ["deviceId"],
+            where: {
+                startedAt: { gte: since },
+                changedLines: { gt: 0 },
+                isDuplicate: false,
+            },
+            _sum: {
+                changedLines: true,
+            },
+            _max: {
+                startedAt: true,
+            },
+        });
+
+        if (!aggregated.length) {
+            return { total: 0, devices: [] };
+        }
+
+        const deviceIds = aggregated.map((a) => a.deviceId);
+
+        const devices = await deviceRepository.findMany({
+            where: { id: { in: deviceIds } },
+            select: {
+                id: true,
+                name: true,
+            },
+        });
+
+        const deviceMap = new Map(devices.map((d) => [d.id, d.name]));
+
+        const result = aggregated.map((row) => ({
+            id: row.deviceId,
+            name: deviceMap.get(row.deviceId) ?? "Unknown",
+            configChanges: row._sum.changedLines ?? 0,
+            lastBackup: row._max.startedAt,
+        }));
+
+        return {
+            total: result.length,
+            devices: result,
         };
     },
 });
