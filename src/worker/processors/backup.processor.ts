@@ -15,8 +15,6 @@ const secretsService = createSecretsService();
 export async function backupProcessor(job: Job<BackupJobData>) {
     if (job.name === BackupJobName.CreateBackup) {
         logger.info(`[BACKUP] ${BackupJobName.CreateBackup} job started`);
-        // TODO: remove
-        return;
         await createBackup(job.data);
         return;
     }
@@ -163,12 +161,7 @@ async function getConfig({
 
         const output = await execTelnet(client, commands);
 
-        // TODO: check
-        if (client && typeof client.end === "function") {
-            await client.end();
-        } else if (client && typeof client.destroy === "function") {
-            client.destroy();
-        }
+        await client.end();
 
         return sanitizeOutput(output);
     }
@@ -183,9 +176,6 @@ async function getConfig({
     const output = await execShell(client, commands);
 
     client.end();
-
-    // TODO: check
-    // client.destroy();
 
     return sanitizeOutput(output);
 }
