@@ -57,9 +57,6 @@ export async function connectTelnet({
         pageSeparator: /---- More ----|--More--/i,
     });
 
-    // console.log("Connected and Authenticated (via built-in flow)");
-    // console.log("TELNET authenticated, shell ready");
-
     return connection;
 }
 
@@ -67,30 +64,15 @@ export async function execTelnet(
     client: Telnet,
     commands: string[]
 ): Promise<string> {
-    // console.log("Start exec TELNET...");
-    // console.log("commands: ", commands);
     let output = "";
 
     try {
         for (const command of commands) {
-            // console.log(`command: ${command}`);
+            const cmdOutput = await client.exec(command, {
+                execTimeout: 30000,
+            });
 
-            let cmdBuffer = "";
-
-            const dataListener = (data: Buffer) => {
-                cmdBuffer += data.toString();
-            };
-
-            client.on("data", dataListener);
-
-            try {
-                // exec returns the response from the server after the command
-                const cmdOutput = await client.exec(command);
-                // console.log("output received (len): ", cmdOutput.length);
-                output = cmdOutput + "\n";
-            } finally {
-                client.removeListener("data", dataListener);
-            }
+            output = cmdOutput + "\n";
         }
     } catch (error) {
         logger.error({ error }, "Error in execTelnet");
