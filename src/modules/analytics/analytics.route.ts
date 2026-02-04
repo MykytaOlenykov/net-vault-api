@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { AnalyticsHandler } from "./analytics.handler.js";
 import { getAnalyticsResponseSchema } from "@/lib/validation/analytics/analytics.schema.js";
+import { getDevicesWithConfigChangesResponseSchema } from "@/lib/validation/analytics/analytics.schema.js";
 
 export const createAnalyticsRoutes = (
     fastify: FastifyInstance,
@@ -18,5 +19,20 @@ export const createAnalyticsRoutes = (
             },
         },
         analyticsHandler.getAnalytics
+    );
+
+    fastify.get(
+        "/devices/config-changes",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["analytics"],
+                summary: "Devices with config changes (last 24h)",
+                response: {
+                    200: getDevicesWithConfigChangesResponseSchema,
+                },
+            },
+        },
+        analyticsHandler.getDevicesWithConfigChanges
     );
 };
