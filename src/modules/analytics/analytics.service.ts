@@ -50,6 +50,7 @@ export const createAnalyticsService = (
                 startedAt: { gte: since },
                 changedLines: { gt: 0 },
                 isDuplicate: false,
+                status: BackupStatus.Success,
             },
             _sum: {
                 changedLines: true,
