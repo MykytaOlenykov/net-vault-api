@@ -3,7 +3,10 @@ import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { DeviceService } from "@/modules/device/device.service.js";
 import { ConfigVersionService } from "@/modules/device/config-version.service.js";
 import {
+    CompareConfigsQuerystring,
+    CompareConfigsResponse,
     ConfigVersionParams,
+    GetAllDevicesWithConfigsResponse,
     GetConfigVersionByIdResponse,
     GetConfigVersionsQuerystring,
     GetConfigVersionsResponse,
@@ -75,6 +78,16 @@ export type DeviceHandler = {
 
     triggerBackup: (
         request: FastifyRequest<{ Params: DeviceParams }>,
+        reply: FastifyReply
+    ) => Promise<void>;
+
+    getAllDevicesWithConfigs: (
+        request: FastifyRequest,
+        reply: FastifyReply
+    ) => Promise<void>;
+
+    compareConfigs: (
+        request: FastifyRequest<{ Querystring: CompareConfigsQuerystring }>,
         reply: FastifyReply
     ) => Promise<void>;
 };
@@ -186,6 +199,26 @@ export const createHandler = (
             });
 
             const response = { message };
+
+            return reply.status(200).send(response);
+        },
+
+        getAllDevicesWithConfigs: async (_, reply) => {
+            const { data } =
+                await configVersionService.getAllDevicesWithConfigs();
+
+            const response: GetAllDevicesWithConfigsResponse = { data };
+
+            return reply.status(200).send(response);
+        },
+
+        compareConfigs: async (request, reply) => {
+            const { data } = await configVersionService.compareConfigs({
+                leftConfigId: request.query.leftConfigId,
+                rightConfigId: request.query.rightConfigId,
+            });
+
+            const response: CompareConfigsResponse = { data };
 
             return reply.status(200).send(response);
         },
