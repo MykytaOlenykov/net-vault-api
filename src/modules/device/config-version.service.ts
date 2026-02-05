@@ -1,6 +1,6 @@
-import { PrismaClient, BackupStatus } from "@prisma/client";
 import { NotFoundError } from "@/lib/errors/errors.js";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
+import { PrismaClient, BackupStatus } from "@prisma/client";
 import { getPaginationParams } from "@/lib/utils/pagination.util.js";
 import { ConfigVersionRepository } from "@/database/repositories/config-version/config-version.repository.js";
 import {
@@ -49,6 +49,7 @@ export const createService = (
                     where: {
                         deviceId,
                         status: BackupStatus.Success,
+                        isDuplicate: false,
                     },
                     orderBy: {
                         startedAt: "desc",
@@ -109,6 +110,7 @@ export const createService = (
                 where: {
                     deviceId,
                     status: BackupStatus.Success,
+                    isDuplicate: false,
                 },
                 select: {
                     id: true,
@@ -145,6 +147,7 @@ export const createService = (
                     configVersions: {
                         where: {
                             status: BackupStatus.Success,
+                            isDuplicate: false,
                         },
                         select: {
                             id: true,
