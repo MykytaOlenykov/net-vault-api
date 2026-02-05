@@ -1,7 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { DeviceHandler } from "@/modules/device/device.handler.js";
 import {
+    compareConfigsQuerystringSchema,
+    compareConfigsResponseSchema,
     configVersionParamsSchema,
+    getAllDevicesWithConfigsResponseSchema,
     getConfigVersionByIdResponseSchema,
     getConfigVersionsQuerystringSchema,
     getConfigVersionsResponseSchema,
@@ -56,6 +59,85 @@ export const createDeviceRoutes = (
         deviceHandler.createDevice
     );
 
+    // ВСІ статичні маршрути мають бути перед параметризованими
+    fastify.get(
+        "/tags",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get tags",
+                response: {
+                    200: getTagsResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getTags
+    );
+
+    fastify.get(
+        "/types",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get types",
+                response: {
+                    200: getDeviceTypesResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getTypes
+    );
+
+    fastify.get(
+        "/configs",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get all devices with config versions",
+                response: {
+                    200: getAllDevicesWithConfigsResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getAllDevicesWithConfigs
+    );
+
+    fastify.get(
+        "/configs/compare",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Compare two configuration versions",
+                querystring: compareConfigsQuerystringSchema,
+                response: {
+                    200: compareConfigsResponseSchema,
+                },
+            },
+        },
+        deviceHandler.compareConfigs
+    );
+
+    fastify.get(
+        "/configs/:configId",
+        {
+            preHandler: [fastify.authenticate],
+            schema: {
+                tags: ["device"],
+                summary: "Get specific configuration version",
+                params: configVersionParamsSchema,
+                response: {
+                    200: getConfigVersionByIdResponseSchema,
+                },
+            },
+        },
+        deviceHandler.getConfigVersionById
+    );
+
+    // Параметризовані маршрути після всіх статичних
     fastify.put(
         "/:deviceId",
         {
@@ -103,42 +185,12 @@ export const createDeviceRoutes = (
     );
 
     fastify.get(
-        "/tags",
-        {
-            preHandler: [fastify.authenticate],
-            schema: {
-                tags: ["device"],
-                summary: "Get tags",
-                response: {
-                    200: getTagsResponseSchema,
-                },
-            },
-        },
-        deviceHandler.getTags
-    );
-
-    fastify.get(
-        "/types",
-        {
-            preHandler: [fastify.authenticate],
-            schema: {
-                tags: ["device"],
-                summary: "Get types",
-                response: {
-                    200: getDeviceTypesResponseSchema,
-                },
-            },
-        },
-        deviceHandler.getTypes
-    );
-
-    fastify.get(
         "/:deviceId/configs",
         {
             preHandler: [fastify.authenticate],
             schema: {
                 tags: ["device"],
-                summary: "Get configs",
+                summary: "Get config versions for a device",
                 params: deviceParamsSchema,
                 querystring: getConfigVersionsQuerystringSchema,
                 response: {
@@ -147,22 +199,6 @@ export const createDeviceRoutes = (
             },
         },
         deviceHandler.getConfigVersions
-    );
-
-    fastify.get(
-        "/configs/:configId",
-        {
-            preHandler: [fastify.authenticate],
-            schema: {
-                tags: ["device"],
-                summary: "Get config by id",
-                params: configVersionParamsSchema,
-                response: {
-                    200: getConfigVersionByIdResponseSchema,
-                },
-            },
-        },
-        deviceHandler.getConfigVersionById
     );
 
     fastify.get(

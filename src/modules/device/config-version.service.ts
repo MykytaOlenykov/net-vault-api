@@ -1,9 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, BackupStatus } from "@prisma/client";
 import { NotFoundError } from "@/lib/errors/errors.js";
 import { addDIResolverName } from "@/lib/awilix/awilix.js";
 import { getPaginationParams } from "@/lib/utils/pagination.util.js";
 import { ConfigVersionRepository } from "@/database/repositories/config-version/config-version.repository.js";
 import {
+    CompareConfigsResponse,
+    GetAllDevicesWithConfigsResponse,
     GetConfigVersionByIdResponse,
     GetConfigVersionsQuerystring,
     GetConfigVersionsResponse,
@@ -23,6 +25,13 @@ export type ConfigVersionService = {
     getLastConfigVersion: (args: {
         deviceId: string;
     }) => Promise<GetLastConfigVersionResponse>;
+
+    getAllDevicesWithConfigs: () => Promise<GetAllDevicesWithConfigsResponse>;
+
+    compareConfigs: (args: {
+        leftConfigId: string;
+        rightConfigId: string;
+    }) => Promise<CompareConfigsResponse>;
 };
 
 export const createService = (
@@ -39,9 +48,10 @@ export const createService = (
                 configVersionRepository.findMany({
                     where: {
                         deviceId,
+                        status: BackupStatus.Success,
                     },
                     orderBy: {
-                        versionNumber: "desc",
+                        startedAt: "desc",
                     },
                     skip,
                     take,
@@ -52,11 +62,19 @@ export const createService = (
                         status: true,
                         startedAt: true,
                         finishedAt: true,
+                        configText: true,
+                        configHash: true,
                         changedLines: true,
                         isDuplicate: true,
+                        error: true,
                     },
                 }),
-                configVersionRepository.count(),
+                configVersionRepository.count({
+                    where: {
+                        deviceId,
+                        status: BackupStatus.Success,
+                    },
+                }),
             ]);
 
             return { data: { configVersions, total } };
@@ -90,6 +108,7 @@ export const createService = (
             const configVersion = await configVersionRepository.findFirst({
                 where: {
                     deviceId,
+                    status: BackupStatus.Success,
                 },
                 select: {
                     id: true,
@@ -104,7 +123,7 @@ export const createService = (
                     isDuplicate: true,
                     error: true,
                 },
-                orderBy: [{ versionNumber: "desc" }],
+                orderBy: [{ startedAt: "desc" }],
             });
 
             if (!configVersion) {
@@ -112,6 +131,111 @@ export const createService = (
             }
 
             return { data: { configVersion } };
+        },
+
+        getAllDevicesWithConfigs: async () => {
+            const devices = await prisma.device.findMany({
+                where: {
+                    isActive: true,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    ipAddress: true,
+                    configVersions: {
+                        where: {
+                            status: BackupStatus.Success,
+                        },
+                        select: {
+                            id: true,
+                            deviceId: true,
+                            versionNumber: true,
+                            status: true,
+                            startedAt: true,
+                            finishedAt: true,
+                            configText: true,
+                            configHash: true,
+                            changedLines: true,
+                            isDuplicate: true,
+                            error: true,
+                        },
+                        orderBy: {
+                            startedAt: "desc",
+                        },
+                    },
+                },
+            });
+
+            return {
+                data: {
+                    devices: devices.map((device) => ({
+                        id: device.id,
+                        name: device.name,
+                        ipAddress: device.ipAddress,
+                        configVersions: device.configVersions,
+                    })),
+                },
+            };
+        },
+
+        compareConfigs: async ({ leftConfigId, rightConfigId }) => {
+            const [leftConfig, rightConfig] = await Promise.all([
+                configVersionRepository.findUniqueOrFail({
+                    where: { id: leftConfigId },
+                    select: {
+                        id: true,
+                        deviceId: true,
+                        versionNumber: true,
+                        startedAt: true,
+                        configText: true,
+                        device: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                }),
+                configVersionRepository.findUniqueOrFail({
+                    where: { id: rightConfigId },
+                    select: {
+                        id: true,
+                        deviceId: true,
+                        versionNumber: true,
+                        startedAt: true,
+                        configText: true,
+                        device: {
+                            select: {
+                                id: true,
+                                name: true,
+                            },
+                        },
+                    },
+                }),
+            ]);
+
+            const formatDate = (date: Date): string => {
+                return date.toISOString().split("T")[0];
+            };
+
+            return {
+                data: {
+                    left: {
+                        content: leftConfig.configText || "",
+                        filename: `v${leftConfig.versionNumber}`,
+                        date: formatDate(leftConfig.startedAt),
+                        deviceId: leftConfig.device.id,
+                        deviceName: leftConfig.device.name,
+                    },
+                    right: {
+                        content: rightConfig.configText || "",
+                        filename: `v${rightConfig.versionNumber}`,
+                        date: formatDate(rightConfig.startedAt),
+                        deviceId: rightConfig.device.id,
+                        deviceName: rightConfig.device.name,
+                    },
+                },
+            };
         },
     };
 };

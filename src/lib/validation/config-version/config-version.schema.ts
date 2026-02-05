@@ -38,13 +38,7 @@ export type GetConfigVersionsQuerystring = z.infer<
 
 export const getConfigVersionsResponseSchema = z.object({
     data: z.object({
-        configVersions: z.array(
-            configVersionSchema.omit({
-                configHash: true,
-                configText: true,
-                error: true,
-            })
-        ),
+        configVersions: z.array(configVersionSchema),
         total: z.number(),
     }),
 });
@@ -71,4 +65,51 @@ export const getLastConfigVersionResponseSchema = z.object({
 
 export type GetLastConfigVersionResponse = z.infer<
     typeof getLastConfigVersionResponseSchema
+>;
+
+// Schema for device with config versions
+export const deviceWithConfigsSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    ipAddress: z.string(),
+    configVersions: z.array(configVersionSchema),
+});
+
+export const getAllDevicesWithConfigsResponseSchema = z.object({
+    data: z.object({
+        devices: z.array(deviceWithConfigsSchema),
+    }),
+});
+
+export type GetAllDevicesWithConfigsResponse = z.infer<
+    typeof getAllDevicesWithConfigsResponseSchema
+>;
+
+// Schema for config comparison
+export const compareConfigsQuerystringSchema = z.object({
+    leftConfigId: z.string().uuid(),
+    rightConfigId: z.string().uuid(),
+});
+
+export type CompareConfigsQuerystring = z.infer<
+    typeof compareConfigsQuerystringSchema
+>;
+
+export const configDiffItemSchema = z.object({
+    content: z.string(),
+    filename: z.string(),
+    date: z.string(),
+    deviceId: z.string(),
+    deviceName: z.string(),
+});
+
+export const compareConfigsResponseSchema = z.object({
+    data: z.object({
+        left: configDiffItemSchema,
+        right: configDiffItemSchema,
+    }),
+});
+
+export type CompareConfigsResponse = z.infer<
+    typeof compareConfigsResponseSchema
 >;
