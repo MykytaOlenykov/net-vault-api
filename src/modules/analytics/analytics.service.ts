@@ -31,7 +31,10 @@ export const createAnalyticsService = (
                     _count: true,
                 }),
                 configVersionRepository.count({
-                    where: { finishedAt: { gte: last24Hours } },
+                    where: {
+                        finishedAt: { gte: last24Hours },
+                        isDuplicate: false,
+                    },
                 }),
             ]);
 
