@@ -137,9 +137,6 @@ export const createService = (
 
         getAllDevicesWithConfigs: async () => {
             const devices = await prisma.device.findMany({
-                where: {
-                    isActive: true,
-                },
                 select: {
                     id: true,
                     name: true,
